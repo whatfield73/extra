@@ -19,8 +19,8 @@ enyo.kind({
 		// control logging
 		this.loader.verbose = this.verbose;
 		// callbacks
-		this.loader.report = enyo.bind(this, "walkReport");
-		this.loader.finish = enyo.bind(this, "walkFinish");
+		this.loader.report = this.bindSafely("walkReport");
+		this.loader.finish = this.bindSafely("walkFinish");
 
 		/*
 			TERRIBLE HACK: substitute for default loader
@@ -50,7 +50,8 @@ enyo.kind({
 	walkFinish: function() {
 		// we've read all the manifests and constructed our list of modules
 		this.modules = this.loader.modules;
-		this.async.respond({modules: this.modules});
-		this.doFinish({modules: this.modules});
+		this.designs = this.loader.designs;
+		this.async.respond({modules: this.modules, designs: this.designs});
+		this.doFinish({modules: this.modules, designs: this.designs});
 	}
 });
