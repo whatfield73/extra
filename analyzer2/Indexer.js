@@ -1,18 +1,17 @@
 enyo.kind({
-	name: "Indexer",
+	name: "analyzer.Indexer",
 	kind: null,
 	group: "public",
 	constructor: function() {
 		this.objects = [];
-		this.palette = [];
-		this.propertyMetaData = [];
+		this.design = {};
 	},
 	debug: false,
 	findByName: function(inName) {
-		return Documentor.findByProperty(this.objects, "name", inName);
+		return analyzer.Documentor.findByProperty(this.objects, "name", inName);
 	},
 	findByTopic: function(inTopic) {
-		return Documentor.findByProperty(this.objects, "topic", inTopic);
+		return analyzer.Documentor.findByProperty(this.objects, "topic", inTopic);
 	},
 	/**
 		Creates a new array with all elements of _inArray_ that pass the test implemented by _inFunc_.
@@ -40,7 +39,7 @@ enyo.kind({
 	addModules: function(inModules) {
 		enyo.forEach(inModules, this.addModule, this);
 		// sort (?!)
-		this.objects.sort(Indexer.nameCompare);
+		this.objects.sort(analyzer.Indexer.nameCompare);
 	},
 	addModule: function(inModule) {
 		//
@@ -49,7 +48,9 @@ enyo.kind({
 		//
 		// indexing and merging have to be separated so we can index 'in-progress' modules
 		// without adding them to the database
-		this.debug && enyo.log("Indexer.addModule(): + " + inModule.path);
+		if (this.debug) {
+			enyo.log("analyzer.Indexer.addModule(): + " + inModule.path);
+		}
 		inModule.path = this.normalizePath(inModule.path);
 		this.indexModule(inModule);
 		this.mergeModule(inModule);
@@ -78,7 +79,7 @@ enyo.kind({
 		// name this module by incorporating the path so its unique
 		inModule.name = inModule.path? inModule.path.replace("lib/", ""): inModule.label + "/" + inModule.rawPath;
 		// parse module objects
-		inModule.objects = new Documentor(new Parser(new Lexer(inModule.code)));
+		inModule.objects = new analyzer.Documentor(new analyzer.Parser(new analyzer.Lexer(inModule.code)));
 		// index module objects
 		this.indexObjects(inModule);
 	},
@@ -106,7 +107,7 @@ enyo.kind({
 		}
 	},
 	/**
-	 * Removes all indexer data associated with the specified javascript module, and 
+	 * Removes all indexer data associated with the specified javascript module, and
 	 * re-indexes it.
 	 * @param  inModule		An object containing the path and code of the file
 	 * @public
@@ -123,9 +124,9 @@ enyo.kind({
 	},
 	indexObject: function(inObject) {
 		switch (inObject.type) {
-			case "kind":
-				this.indexKind(inObject);
-				break;
+		case "kind":
+			this.indexKind(inObject);
+			break;
 		}
 		this.indexProperties(inObject);
 	},
@@ -149,7 +150,7 @@ enyo.kind({
 		this.indexInheritance(o);
 		/*
 		// append published properties to main property list
-		var i = Documentor.indexByName(o.properties, "published");
+		var i = analyzer.Documentor.indexByName(o.properties, "published");
 		if (i >= 0) {
 			var pp = o.properties[i];
 			o.properties.splice(i, 1);
@@ -184,7 +185,7 @@ enyo.kind({
 	listInheritedProperties: function(o) {
 		var all = [], map = {};
 		// walk up the inheritance chain from the basest base
-		for (var i=o.superkinds.length - 1, n; n=o.superkinds[i]; i--) {
+		for (var i=o.superkinds.length - 1, n; (n=o.superkinds[i]); i--) {
 			// find the superkind properties
 			var sk = this.findByName(n);
 			if (sk) {
@@ -195,13 +196,13 @@ enyo.kind({
 		// merge the kind's own properties
 		this.mergeInheritedProperties(o.properties, map, all);
 		// default sort
-		all.sort(Indexer.nameCompare);
+		all.sort(analyzer.Indexer.nameCompare);
 		// return the list
 		return all;
 	},
 	mergeInheritedProperties: function(inProperties, inMap, inAll) {
 		if (inProperties) {
-			for (var j=0, p; p=inProperties[j]; j++) {
+			for (var j=0, p; (p=inProperties[j]); j++) {
 				// look for overridden property
 				var old = inMap.hasOwnProperty(p.name) && inMap[p.name];
 				if (old) {
@@ -222,7 +223,7 @@ enyo.kind({
 		// produce a list of components owned by 'o' as specified by 'components' property
 		o.components = this._listComponents(o, [], {});
 		// add componentsBlockStart and componentsBlockEnd properties for Ares
-		var c$ = Documentor.findByName(o.properties, "components");
+		var c$ = analyzer.Documentor.findByName(o.properties, "components");
 		if (c$ && c$.value) {
 			o.componentsBlockStart = c$.value[0].start;
 			o.componentsBlockEnd = c$.value[0].end;
@@ -230,19 +231,19 @@ enyo.kind({
 	},
 	_listComponents: function(o, list, map) {
 		// if 'components' exists, it's a property with a block value
-		var c$ = Documentor.findByName(o.properties, "components");
+		var c$ = analyzer.Documentor.findByName(o.properties, "components");
 		if (c$ && c$.value && c$.value.length) {
 			// the array of properties in the block value
 			var p$ = c$.value[0].properties;
-			for (var i=0, p; p=p$[i]; i++) {
+			for (var i=0, p; (p=p$[i]); i++) {
 				// each p is a config block, find the 'name' and 'kind' properties, if they exist
-				var n = Documentor.findByName(p.properties, "name");
+				var n = analyzer.Documentor.findByName(p.properties, "name");
 				if (n) {
-					n = Documentor.stripQuotes(n.value[0].token || "");
+					n = analyzer.Documentor.stripQuotes(n.value[0].token || "");
 				}
-				var k = Documentor.findByName(p.properties, "kind");
+				var k = analyzer.Documentor.findByName(p.properties, "kind");
 				// FIXME: default kind is 'Control' only if the DOM package is loaded
-				k = Documentor.stripQuotes(k && k.value[0].token || "Control");
+				k = analyzer.Documentor.stripQuotes(k && k.value[0].token || "Control");
 				// in Component, anonymous sub-components are named by enumerating kinds, recreate that here
 				if (!n) {
 					// only grab the last bit of the namespace
@@ -269,15 +270,12 @@ enyo.kind({
 	},
 	/**
 	 * Adds data from an array of "design" objects to the indexer, which were previously
-	 * loaded by the Reader into each design object's `code` property.  Design objects may
-	 * specify palette or property meta-data.
+	 * loaded by the Reader into each design object's `code` property.  
 	 * @param  inDesigns	Array of design objects with unparsed code string
 	 * @public
 	 */
 	addDesigns: function(inDesigns) {
 		enyo.forEach(inDesigns, this.addDesign, this);
-		enyo.forEach(this.palette, this.indexPalette, this);
-		enyo.forEach(this.propertyMetaData, this.indexPropertyMetaData, this);
 	},
 	/**
 	 * Adds a given "design" object to the indexer.
@@ -288,14 +286,15 @@ enyo.kind({
 		inDesign.path = this.normalizePath(inDesign.path);
 		try {
 			var design = enyo.json.parse(inDesign.code);
-			enyo.forEach(["palette", "propertyMetaData"], function(type) {
+			var keys = enyo.keys(design);
+			enyo.forEach(keys, function(type) {
 				if (design[type]) {
 					var src = design[type];
-					var dest = this[type] || [];
+					var dest = this.design[type] || [];
 					enyo.forEach(src, function(item) {
 						item.design = inDesign;
 					}, this);
-					this[type] = dest.concat(src);
+					this.design[type] = dest.concat(src);
 				}
 			}, this);
 		} catch (err) {
@@ -308,58 +307,32 @@ enyo.kind({
 	 * @public
 	 */
 	removeDesign: function(inDesign) {
-		this.removeDesignByPath(inDesign.path);
+		try {
+			var keys = enyo.keys(this.design);
+			enyo.forEach(keys, function(category) {
+				this.removeDesignByPath(inDesign.path, category);
+			}, this);
+		} catch (err) {
+			enyo.warn("Error removing designer (" + inDesign + "): " + err);
+		}		
 	},
 	/**
 	 * Removes all indexer data associated with the specified design file
 	 * @param  inPath	The path to the design file
 	 * @public
 	 */
-	removeDesignByPath: function(inPath) {
+	removeDesignByPath: function(inPath, category) {
 		inPath = this.normalizePath(inPath);
-		this.removePalettesByPath(inPath);
-		this.removePropertyMetaDataByPath(inPath);
-	},
-	/**
-	 * Removes palette info associated with the specified design file
-	 * @param  inPath	The path to the design file
-	 * @protected
-	 */
-	removePalettesByPath: function(inPath) {
-		var len = this.palette.length;
+		var len = this.design[category].length;
 		while (len--) {
-			var cat = this.palette[len];
+			var cat = this.design[category][len];
 			if (cat.design.path == inPath) {
-				enyo.forEach(cat.items, function(item) {
-					var obj = this.findByName(item.kind);
-					if (obj) {
-						obj.hasPalette = false;
-					}
-				}, this);
-				this.palette.splice(len, 1);
+				this.design[category].splice(len, 1);
 			}
 		}
 	},
 	/**
-	 * Removes property meta-data associated with the specified design file
-	 * @param  inPath	The path to the design file
-	 * @protected
-	 */
-	removePropertyMetaDataByPath: function(inPath) {
-		var len = this.propertyMetaData.length;
-		while (len--) {
-			var item = this.propertyMetaData[len];
-			if (item.design.path == inPath) {
-				var obj = this.findByName(item.kind);
-				if (obj) {
-					obj.propertyMetaData = false;
-				}
-				this.propertyMetaData.splice(len, 1);
-			}
-		}
-	},
-	/**
-	 * Removes all indexer data associated with the specified design file, and 
+	 * Removes all indexer data associated with the specified design file, and
 	 * re-indexes it.
 	 * @param  inDesign		An object containing the path and code of the design file
 	 * @protected
@@ -367,42 +340,6 @@ enyo.kind({
 	reIndexDesign: function(inDesign) {
 		this.removeDesign(inDesign);
 		this.addDesign(inDesign);
-	},
-	/**
-	 * Loops over all the palette entries in a given category and marks kinds in the indexer
-	 * with a flag indicating it has a palette entry (useful for generating a catch-all palette
-	 * later).  Also fills in minimum palette information based on defaults if it is missing.
-	 * @param  inCategory	A palette category (containing `items` array of palette entries)
-	 * @protected
-	 */
-	indexPalette: function(inCategory) {
-		enyo.forEach(inCategory.items, function(item) {
-			var obj = this.findByName(item.kind);
-			if (obj) {
-				obj.hasPalette = true;
-				// Fill in defaults for missing data
-				item.name = item.name || obj.name;
-				item.config = item.config || { kind:obj.name };
-				item.inline = item.inline || { kind:obj.name };
-				item.description = item.description || obj.comment;
-			} else {
-				enyo.warn("Designer meta-data specifed palette entry for '" + (item.kind || item.name) + "' but no kind by that name found.");
-			}
-		}, this);
-	},
-	/**
-	 * Assigns a property meta-data item for a kind to its propertyMetaData entry
-	 * @protected
-	 */
-	indexPropertyMetaData: function(inItem) {
-		if (inItem.type == "kind"){
-			var obj = this.findByName(inItem.name);
-			if (obj) {
-				obj.propertyMetaData = inItem;
-			} else {
-				enyo.warn("Designer meta-data specifed property info for '" + inItem.name + "' but no kind by that name found.");
-			}
-		}
 	},
 	statics: {
 		nameCompare: function(inA, inB) {
