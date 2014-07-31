@@ -74,7 +74,7 @@ enyo.kind({
 	getFunctions: function() {
 		this.checkDefAvail();
 		var functions = [];
-		
+
 		var obj = this.definition.properties;
 		for (var i=0; i<obj.length; i++) {
 			var p = obj[i];
@@ -100,7 +100,7 @@ enyo.kind({
 		for(var i = 0; i < object.properties.length; i++) {
 			var p = object.properties[i];
 			if (p.name === 'handlers') {
-				for(var j = 0; i < p.value[0].properties.length; j++) {
+				for(var j = 0; j < p.value[0].properties.length; j++) {
 					var q = p.value[0].properties[j];
 					var name = q.value[0].name;
 					name = name.replace(/["']{1}/g, '');
@@ -138,5 +138,5 @@ enyo.kind({
 			}
 		}
 		return declared;
-	},
+	}
 });

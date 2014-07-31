@@ -22,8 +22,13 @@ enyo.kind({
 			callback: this.bindSafely("fileLoaded", inFile)
 		});
 	},
-	fileLoaded: function(inFile, inCode) {
-		this.addFile(inFile, inCode);
+	fileLoaded: function(inFile, inCode, xhr) {
+		if (xhr.status >= 200 && xhr.status < 300) {
+			this.addFile(inFile, inCode);
+		}
+		else {
+			this.fail("Analyser cannot read " + inFile.path + ": " + xhr.status + ' ' + xhr.statusText);
+		}
 		this.nextFile();
 	},
 	addFile: function(inFile, inCode) {
